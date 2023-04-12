@@ -20,7 +20,7 @@ set script_folder [_tcl::get_script_folder]
 ################################################################
 # Check if script is running in correct Vivado version.
 ################################################################
-set scripts_vivado_version 2021.2
+set scripts_vivado_version 2022.1
 set current_vivado_version [version -short]
 
 if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
@@ -51,7 +51,9 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 set list_projs [get_projects -quiet]
 if { $list_projs eq "" } {
    create_project project_1 myproj -part xck26-sfvc784-2LV-c
-   set_property BOARD_PART xilinx.com:kv260_som_som240_1_connector_kv260_carrier_som240_1_connector:part0:1.2 [current_project]
+   #set_property BOARD_PART xilinx.com:kv260_som_som240_1_connector_kv260_carrier_som240_1_connector:part0:1.2 [current_project]
+   set_property board_part xilinx.com:kv260_som:part0:1.3 [current_project]
+   set_property board_connections {som240_1_connector xilinx.com:kv260_carrier:som240_1_connector:1.3} [get_projects project_1]
 }
 
 
@@ -133,7 +135,7 @@ if { $bCheckIPs == 1 } {
    set list_check_ips "\ 
 xilinx.com:ip:clk_wiz:6.0\
 xilinx.com:ip:proc_sys_reset:5.0\
-xilinx.com:ip:zynq_ultra_ps_e:3.3\
+xilinx.com:ip:zynq_ultra_ps_e:3.4\
 "
 
    set list_ips_missing ""
@@ -156,6 +158,10 @@ xilinx.com:ip:zynq_ultra_ps_e:3.3\
 ##################################################################
 # CHECK Modules
 ##################################################################
+add_files {C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/compat.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/nes_fb.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/test_nes.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/MicroCode.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/ppu.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/nes_axi.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/ppu_dummy.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/dsp.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/uram.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/nes.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/cpu.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/mmu.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/pmod_audio.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/nes_dp.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/pmod_led.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/hw_sound.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/apu.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/NES_KV260.v}
+update_compile_order -fileset sources_1
+update_compile_order -fileset sources_1
+
 set bCheckModules 1
 if { $bCheckModules == 1 } {
    set list_check_mods "\ 
@@ -294,7 +300,7 @@ proc create_root_design { parentCell } {
   set proc_sys_reset_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 proc_sys_reset_1 ]
 
   # Create instance: zynq_ultra_ps_e_0, and set properties
-  set zynq_ultra_ps_e_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:zynq_ultra_ps_e:3.3 zynq_ultra_ps_e_0 ]
+  set zynq_ultra_ps_e_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:zynq_ultra_ps_e:3.4 zynq_ultra_ps_e_0 ]
   set_property -dict [ list \
    CONFIG.PSU_BANK_0_IO_STANDARD {LVCMOS18} \
    CONFIG.PSU_BANK_1_IO_STANDARD {LVCMOS18} \
@@ -1156,5 +1162,13 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
 ##################################################################
 
 create_root_design ""
+
+make_wrapper -files [get_files c:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/myproj/project_1.srcs/sources_1/bd/design_1/design_1.bd] -top
+add_files -norecurse c:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/myproj/project_1.gen/sources_1/bd/design_1/hdl/design_1_wrapper.v
+
+update_compile_order -fileset sources_1
+set_property top design_1_wrapper [current_fileset]
+update_compile_order -fileset sources_1
+add_files -fileset constrs_1 -norecurse C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/pmod.xdc
 
 

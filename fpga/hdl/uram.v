@@ -11,7 +11,7 @@
 //
 module bytewrite_ram_1b (clk, we, addr, di, do);
 
-parameter SIZE = 256*1024;  // 256*9=2304 KB, we use up all URAM
+parameter SIZE = 256*1024; //256*1024;  // 256*9=2304 KB, we use up all URAM
 parameter ADDR_WIDTH = 18;
 parameter COL_WIDTH = 8; 
 parameter NB_COL = 9;
@@ -22,7 +22,7 @@ input [ADDR_WIDTH-1:0] addr;
 input [NB_COL*COL_WIDTH-1:0] di;
 output reg [NB_COL*COL_WIDTH-1:0] do;
 
-(* ram_style = "ultra" *)
+(* ram_style = "mixed" *)
 reg [NB_COL*COL_WIDTH-1:0] RAM [SIZE-1:0];
 
 always @(posedge clk)

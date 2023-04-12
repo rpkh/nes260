@@ -12,13 +12,27 @@ Current status:
 
 ### Running NES260
 
-Download the [binary release zip file](https://github.com/zf3/nes260/releases/tag/v1.0). Inside there's a BOOT.bin image for booting the KV260 board, and nes260.py for running on Windows.
+- open design_1.tcl and change the paths according to your local path
+-  - line 161
+-  - line 1166
+-  - line 1172
+- Compile the Vivado project (source design_1.tcl)
+- generate the XSA file
+- open Vitis and create a new platform using the previous XSA file
+- create a new application project and import all the sources from "sw" directory
+- build
+- open XSCT
+- run those commands
+- - connect
+- - targets -set -nocase -filter {name =~ "\*PSU\*"}
+- - mwr 0xff5e0200 0x0100
+- - rst -system
+- run app
 
-KV260's boot process is different from most FPGA boards. It always boots from on-board QSPI flash and there's no switches/jumpers for other ways. So easiest way to boot BOOT.bin is to program it to QSPI flash. Follow [Xilinx's instructions](https://xilinx-wiki.atlassian.net/wiki/spaces/A/pages/1641152513/Kria+K26+SOM#Stand-alone-FW-Update-&-Recovery-Utility) to do it. (You will need an Ethernet cable). If you have Xilinx's Vitis/Vivado development tools installed, you can actually switch to [SD bootmode](https://xilinx.github.io/kria-apps-docs/creating_applications/1.0/build/html/docs/creating_applications_bootmodes.html). The MicroSD card preparation is as simple as formating it as FAT and copy the BOOT.BIN to it.
 
 If you see a grey screen after boot, then NES260 is ready for loading .nes ROMs. Connect KV260 to PC with USB cable and run `pc/nes26.py` with python to load games (`pip install pyserial itertools inputs kaitaistruct importlib`, then `python nes26.py`). USB game controller should be connected to the PC (**not** KV260). My Xbox 360 controllers work fine.
 
-To get audio, connect a [IceSugar Audio 1.2](https://www.aliexpress.com/item/1005001505255692.html) module to the PMOD port. It provides both a small speaker and a 3.5mm jack.
+To get audio, connect a [Common audio amplifier](https://www.amazon.it/gp/product/B07DJ4NJXR/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1) module to the PMOD port (1-2 pins for the L-R channels, 5 to GROUND).
 
 ### Interested in retro-gaming or learning FPGA programming?
 
@@ -34,4 +48,4 @@ You can,
 
 [![NES260 demo](https://img.youtube.com/vi/p09k8FfFO0Q/0.jpg)](https://www.youtube.com/watch?v=p09k8FfFO0Q)
 
-Feng Zhou, 2022-7
+MakarenaLabs , 04-2023
