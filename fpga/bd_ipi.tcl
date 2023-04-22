@@ -51,15 +51,13 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 set list_projs [get_projects -quiet]
 if { $list_projs eq "" } {
    create_project project_1 myproj -part xck26-sfvc784-2LV-c
-   #set_property BOARD_PART xilinx.com:kv260_som_som240_1_connector_kv260_carrier_som240_1_connector:part0:1.2 [current_project]
-   set_property board_part xilinx.com:kv260_som:part0:1.3 [current_project]
-   set_property board_connections {som240_1_connector xilinx.com:kv260_carrier:som240_1_connector:1.3} [get_projects project_1]
+   set_property BOARD_PART xilinx.com:kv260_som_som240_1_connector_kv260_carrier_som240_1_connector:part0:1.3 [current_project]
 }
 
 
 # CHANGE DESIGN NAME HERE
 variable design_name
-set design_name design_1
+set design_name bd_ipi
 
 # If you do not already have an existing IP Integrator design open,
 # you can create a design using the following command:
@@ -158,10 +156,6 @@ xilinx.com:ip:zynq_ultra_ps_e:3.4\
 ##################################################################
 # CHECK Modules
 ##################################################################
-add_files {C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/compat.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/nes_fb.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/test_nes.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/MicroCode.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/ppu.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/nes_axi.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/ppu_dummy.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/dsp.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/uram.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/nes.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/cpu.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/mmu.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/pmod_audio.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/nes_dp.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/pmod_led.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/hw_sound.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/apu.v C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/hdl/NES_KV260.v}
-update_compile_order -fileset sources_1
-update_compile_order -fileset sources_1
-
 set bCheckModules 1
 if { $bCheckModules == 1 } {
    set list_check_mods "\ 
@@ -846,7 +840,7 @@ sclk_out#miso_mo1#mo2#mo3#mosi_mi0#n_ss_out#rxd#txd#gpio0[8]#gpio0[9]#gpio0[10]#
    CONFIG.PSU__CRL_APB__SPI0_REF_CTRL__DIVISOR0 {7} \
    CONFIG.PSU__CRL_APB__SPI0_REF_CTRL__DIVISOR1 {1} \
    CONFIG.PSU__CRL_APB__SPI1_REF_CTRL__ACT_FREQMHZ {187.498123} \
-   CONFIG.PSU__CRL_APB__SPI1_REF_CTRL__DIVISOR0 {8} \
+   CONFIG.PSU__CRL_APB__SPI1_REF_CTRL__DIVISOR0 {7} \
    CONFIG.PSU__CRL_APB__SPI1_REF_CTRL__DIVISOR1 {1} \
    CONFIG.PSU__CRL_APB__SPI1_REF_CTRL__SRCSEL {IOPLL} \
    CONFIG.PSU__CRL_APB__TIMESTAMP_REF_CTRL__ACT_FREQMHZ {99.999001} \
@@ -1162,13 +1156,5 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
 ##################################################################
 
 create_root_design ""
-
-make_wrapper -files [get_files c:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/myproj/project_1.srcs/sources_1/bd/design_1/design_1.bd] -top
-add_files -norecurse c:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/myproj/project_1.gen/sources_1/bd/design_1/hdl/design_1_wrapper.v
-
-update_compile_order -fileset sources_1
-set_property top design_1_wrapper [current_fileset]
-update_compile_order -fileset sources_1
-add_files -fileset constrs_1 -norecurse C:/Users/enric/MAKARENALABS/Xilinx/nes260/fpga/pmod.xdc
 
 
