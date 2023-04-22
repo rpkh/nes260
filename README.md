@@ -12,11 +12,15 @@ Current status:
 
 ### Running NES260
 
-- Open Vivado 2022.1 and run the fpga\setup_project.tcl script
-   - Click on Tools &rarr; Run Tcl Script... &rarr; <project_location>\fpga\setup_project.tcl
+- Open Vivado 2022.1 and run the fpga/setup_project.tcl script
+   - Click on Tools &rarr; Run Tcl Script... &rarr; <project_location>/fpga/setup_project.tcl
 - Compile the Vivado project
 - Generate the XSA file
-- Open the Xilinx Software Command Line Tool (XSCT) and run the sw\setup_project.tcl script
+  > In the Tcl Console:
+  >  ```
+  >  write_hw_platform -fixed -include_bit -force -file <project_location>/bin/nes_kv260.xsa
+  >  ```
+- Open the Xilinx Software Command Line Tool (XSCT) and run the sw/setup_project.tcl script
    ```
    source <project_location>/sw/setup_project.tcl
    ```
