@@ -15,11 +15,14 @@ Current status:
 - Open Vivado 2022.1 and run the fpga\setup_project.tcl script
    - Click on Tools &rarr; Run Tcl Script... &rarr; <project_location>\fpga\setup_project.tcl
 - Compile the Vivado project
-- generate the XSA file
-- open Vitis and create a new platform using the previous XSA file
-- create a new application project and import all the sources from "sw" directory
-- build
-- open XSCT
+- Generate the XSA file
+- Open the Xilinx Software Command Line Tool (XSCT) and run the sw\setup_project.tcl script
+   ```
+   source <project_location>/sw/setup_project.tcl
+   ```
+- Open Vitis and close the welcome screen
+- Build all
+- Open XSCT
 - run those commands
 - - connect
 - - targets -set -nocase -filter {name =~ "\*PSU\*"}
