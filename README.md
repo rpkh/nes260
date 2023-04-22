@@ -12,16 +12,21 @@ Current status:
 
 ### Running NES260
 
-- open design_1.tcl and change the paths according to your local path
--  - line 161
--  - line 1166
--  - line 1172
-- Compile the Vivado project (source design_1.tcl)
-- generate the XSA file
-- open Vitis and create a new platform using the previous XSA file
-- create a new application project and import all the sources from "sw" directory
-- build
-- open XSCT
+- Open Vivado 2022.1 and run the fpga/setup_project.tcl script
+   - Click on Tools &rarr; Run Tcl Script... &rarr; <project_location>/fpga/setup_project.tcl
+- Compile the Vivado project
+- Generate the XSA file
+  > In the Tcl Console:
+  >  ```
+  >  write_hw_platform -fixed -include_bit -force -file <project_location>/bin/nes_kv260.xsa
+  >  ```
+- Open the Xilinx Software Command Line Tool (XSCT) and run the sw/setup_project.tcl script
+   ```
+   source <project_location>/sw/setup_project.tcl
+   ```
+- Open Vitis and close the welcome screen
+- Build all
+- Open XSCT
 - run those commands
 - - connect
 - - targets -set -nocase -filter {name =~ "\*PSU\*"}
