@@ -27,9 +27,9 @@ module nes_dp(
     reg [11:0] sx = 0;  // horizontal screen position
     reg [11:0] sy = 0;  // vertical screen position
 
+    reg r_ppu_clk = 1;
     wire ppu_clk_edge = r_ppu_clk == 1'b0 && ppu_clk == 1'b1;
     
-    reg r_ppu_clk = 1;
     always @(posedge clk_nes) begin
         r_ppu_clk <= ppu_clk;
     end    
@@ -75,6 +75,7 @@ module nes_dp(
     parameter VS_END = VS_STA + 5;    // sync ends
     parameter SCREEN = 1124;          // last line on screen (after back porch)
 
+    reg p_de, p_hsync, p_vsync;
     always @(posedge clk_pixel) begin
          p_hsync <= (sx >= HS_STA && sx < HS_END);
          p_vsync <= (sy >= VS_STA && sy < VS_END);
@@ -103,8 +104,8 @@ module nes_dp(
 
     // Put PPU data in framebuffer, all in ppu_clk domain
     wire ppu_active = ppu_scanline <= 239 && ppu_cycle != 0 && ppu_cycle <= 256;
-    wire [15:0] fb_waddr = {ppu_scanline[7:0], ppu_cycle_minus_one[7:0]};         // framebuffer write address
     wire [8:0] ppu_cycle_minus_one = ppu_cycle - 1;
+    wire [15:0] fb_waddr = {ppu_scanline[7:0], ppu_cycle_minus_one[7:0]};         // framebuffer write address
     
     /* Double buffer
     wire [5:0] pixel0, pixel1;
@@ -124,7 +125,6 @@ module nes_dp(
     
     wire [5:0] p_pixel;
     (* ram_style = "registers" *) reg [5:0] pixel;
-    reg p_de, p_hsync, p_vsync;
     nes_fb fb0(clk_pixel, video_active, fb_raddr, p_pixel,
                clk_nes, ppu_signal & ppu_active & ppu_refresh, fb_waddr, ppu_video);
     always @(posedge clk_pixel) begin
