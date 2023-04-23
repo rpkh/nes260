@@ -47,6 +47,10 @@ if {[file isdirectory $rtl_dir] == 1} {
     add_files -fileset sources_1 -quiet $rtl_dir
 }
 
+# Xilinx's UNISIM library already has the module definitions defined in compat.v
+# Disable the file to fix the "overwriting previous definition of module xx" critical warnings.
+set_property is_enabled false [get_files -of_objects [get_filesets sources_1] compat.v]
+
 if {[get_filesets -quiet sim_1] == ""} {
     create_fileset -simset sim_1
 }
