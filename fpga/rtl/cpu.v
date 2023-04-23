@@ -1,6 +1,9 @@
 // Copyright (c) 2012-2013 Ludvig Strigeus
 // This program is GPL Licensed. See COPYING for the full license.
 
+`ifndef NES_CPU_GUARD
+`define NES_CPU_GUARD
+
 `include "MicroCode.v"
 
 module MyAddSub(input [7:0] A,B,
@@ -359,3 +362,5 @@ always @(posedge clk) begin
   end
 end
 endmodule
+
+`endif // NES_CPU_GUARD

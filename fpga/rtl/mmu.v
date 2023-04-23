@@ -1,6 +1,9 @@
 // Copyright (c) 2012-2013 Ludvig Strigeus
 // This program is GPL Licensed. See COPYING for the full license.
 
+`ifndef NES_MMU_GUARD
+`define NES_MMU_GUARD
+
 // No mapper chip
 module MMC0(input clk, input ce,
             input [31:0] flags,
@@ -1758,3 +1761,4 @@ endmodule
 // CPU-RAM   = 1110
 // CARTRAM   = 1111
                  
+`endif // NES_MMU_GUARD

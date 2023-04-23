@@ -1,3 +1,6 @@
+`ifndef NES_MICROCODE_GUARD
+`define NES_MICROCODE_GUARD
+
 module MicroCodeTableInner(input clk, input ce, input reset, input [7:0] IR, input [2:0] State, output reg [8:0] M);
   reg [8:0] L[0:2047];
   initial begin
@@ -2372,3 +2375,4 @@ B[255] = 19'b00011111111_010_00_001;
                  };
 endmodule
 
+`endif // NES_MICROCODE_GUARD
