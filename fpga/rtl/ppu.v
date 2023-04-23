@@ -1,6 +1,9 @@
 // Copyright (c) 2012-2013 Ludvig Strigeus
 // This program is GPL Licensed. See COPYING for the full license.
 
+`ifndef NES_PPU_GUARD
+`define NES_PPU_GUARD
+
 // Module handles updating the loopy scroll register
 module LoopyGen(input clk, input ce,
                 input is_rendering,
@@ -706,3 +709,5 @@ module PPU(input clk, input ce, input reset,   // input clock  21.48 MHz / 4. 1 
   assign mapper_ppu_flags = {scanline, cycle, obj_size, is_rendering};
 
 endmodule  // PPU
+
+`endif // NES_PPU_GUARD

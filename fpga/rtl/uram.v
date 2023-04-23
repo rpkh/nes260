@@ -86,8 +86,8 @@ always @(posedge clk) begin
         // output video
         y2 <= y;
         x2 <= x;
-        scanline <= {'b0,y2};
-        cycle <= {'b0,x2};
+        scanline <= {1'b0,y2};
+        cycle <= {1'b0,x2};
         color <= do << byte_addr2[2:0];
     end
     endcase

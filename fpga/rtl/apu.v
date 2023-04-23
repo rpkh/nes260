@@ -1,6 +1,8 @@
 // Copyright (c) 2012-2013 Ludvig Strigeus
 // This program is GPL Licensed. See COPYING for the full license.
- 
+`ifndef NES_APU_GUARD
+`define NES_APU_GUARD
+
 module LenCtr_Lookup(input [4:0] X, output [7:0] Yout);
 reg [6:0] Y;
 always @*
@@ -804,3 +806,5 @@ assign DOUT = {DmcIrq, frame_irq, 1'b0,
 assign IRQ = frame_irq || DmcIrq;
 
 endmodule
+
+`endif // NES_APU_GUARD

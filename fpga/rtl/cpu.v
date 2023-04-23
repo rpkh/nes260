@@ -1,6 +1,9 @@
 // Copyright (c) 2012-2013 Ludvig Strigeus
 // This program is GPL Licensed. See COPYING for the full license.
 
+`ifndef NES_CPU_GUARD
+`define NES_CPU_GUARD
+
 `include "MicroCode.v"
 
 module MyAddSub(input [7:0] A,B,
@@ -205,6 +208,10 @@ module CPU(input clk, input ce, input reset,
   wire [7:0] NextIR = (State == 0) ? (GotInterrupt ? 8'd0 : DIN) : IR;
   wire IsBranchCycle1 = (IR[4:0] == 5'b10000) && State[0];
 
+  wire [15:0] AX;
+  wire AXCarry;
+AddressGenerator addgen(clk, ce, AddrCtrl, {IrFlags[0], IrFlags[1]}, DIN, T, X, Y, AX, AXCarry);
+
   // Compute next state.
   reg [2:0] NextState = 0;
   always @(*)  begin
@@ -215,10 +222,6 @@ module CPU(input clk, input ce, input reset,
     3: NextState = (JumpNoOverflow ? 3'd0 : 3'd4);
     endcase
   end
-
-  wire [15:0] AX;
-  wire AXCarry;
-AddressGenerator addgen(clk, ce, AddrCtrl, {IrFlags[0], IrFlags[1]}, DIN, T, X, Y, AX, AXCarry);
 
 // Microcode table has a 1 clock latency (block ram).
 MicroCodeTable micro2(clk, ce, reset, NextIR, NextState, MicroCode);
@@ -359,3 +362,5 @@ always @(posedge clk) begin
   end
 end
 endmodule
+
+`endif // NES_CPU_GUARD

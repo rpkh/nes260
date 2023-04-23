@@ -168,21 +168,21 @@ wire is_internal_ram = addr[21:16] == 'b11_1000; // 'h38_0000 - 'h38_ffff (64K),
 wire is_vram = addr[21:16] == 'b11_0000;         // 'h30_0000 - 'h30_ffff (64K), actually only uses lower 2KB
 wire is_prg_ram = addr[21:17] == 'b11_110;       // 'h3c_0000 - 'h3d_ffff, 128KB of address space is PRG RAM
 wire is_hole = addr[21:20] == 'b01 || (addr[21:20] == 'b11 && !is_prg_ram && !is_internal_ram && !is_vram);   // memory hole
-wire [17:0] ram_addr = is_prg_ram ? {'b0, addr[16:0]}:
-                       is_internal_ram ? {'b10, addr[15:0]} :
-                       is_vram ? {'b11, addr[15:0]} :
+wire [17:0] ram_addr = is_prg_ram ? {1'b0, addr[16:0]}:
+                       is_internal_ram ? {2'b10, addr[15:0]} :
+                       is_vram ? {2'b11, addr[15:0]} :
                        {addr[21], addr[19:3]};
-wire [3:0] ram_offset = (is_vram || is_internal_ram || is_prg_ram) ? 'b1000 : {'b0, addr[2:0]};
+wire [3:0] ram_offset = (is_vram || is_internal_ram || is_prg_ram) ? 'b1000 : {1'b0, addr[2:0]};
 wire [8:0] ram_we = is_hole ? 0 : framwe(ram_offset, write);
 wire [71:0] edin= ram_offset == 0 ? din :
                   ram_offset == 1 ? din << 8 :
                   ram_offset == 2 ? din << 16 :
                   ram_offset == 3 ? din << 24 :
-                  ram_offset == 4 ? {'h00_00_00_00, din, 'h00_00_00_00} :
-                  ram_offset == 5 ? {'h00_00_00, din, 'h00_00_00_00_00} :
-                  ram_offset == 6 ? {'h00_00, din, 'h00_00_00_00_00_00} :
-                  ram_offset == 7 ? {'h00, din, 'h00_00_00_00_00_00_00} :
-                  {din, 'h00_00_00_00_00_00_00_00};
+                  ram_offset == 4 ? {32'h00_00_00_00, din, 32'h00_00_00_00} :
+                  ram_offset == 5 ? {24'h00_00_00, din, 40'h00_00_00_00_00} :
+                  ram_offset == 6 ? {16'h00_00, din, 48'h00_00_00_00_00_00} :
+                  ram_offset == 7 ? {8'h00, din, 56'h00_00_00_00_00_00_00} :
+                  {din, 64'h00_00_00_00_00_00_00_00};
 wire [71:0] edout;
 
 function [8:0] framwe(input [3:0] offset, input write);
@@ -284,6 +284,23 @@ module NES_KV260(
   reg [1:0] nes_ce = 0;
   wire [15:0] SW = 16'b1111_1111_1111_1111;   // every switch is on
 
+  // ROM loader
+  wire [21:0] loader_addr;
+  wire [7:0] loader_write_data;
+  wire loader_write;
+  wire [31:0] mapper_flags;
+  wire loader_done, loader_fail;
+
+  // Drive loader from AXI
+  reg [1:0] axi_state = 0;     // 0: idle, 1: loader_expect_len, 2: loader_loading
+  wire [7:0] wbyte = s00_axi_wdata[7:0];
+  wire [31:0] wdata = s00_axi_wdata;
+
+  reg  [7:0] loader_conf;     // bit 0 is reset
+  reg [7:0] loader_btn, loader_btn_2;
+
+  wire [31:0] axi_cmd;
+  wire [31:0] axi_status;
     // Instantiation of Axi Bus Interface S00_AXI
   nes_axi # ( 
     .C_S_AXI_DATA_WIDTH(32),
@@ -299,19 +316,9 @@ module NES_KV260(
     .S_AXI_RDATA(s00_axi_rdata),.S_AXI_RRESP(s00_axi_rresp),.S_AXI_RVALID(s00_axi_rvalid),.S_AXI_RREADY(s00_axi_rready)
   );
 
-  wire [31:0] axi_cmd;
-  wire [31:0] axi_status;
   assign axi_status[0] = loader_done;
   assign axi_status[1] = loader_fail;
   assign axi_status[3:2] = axi_state;
-
-  // Drive loader from AXI
-  reg [1:0] axi_state = 0;     // 0: idle, 1: loader_expect_len, 2: loader_loading
-  wire [7:0] wbyte = s00_axi_wdata[7:0];
-  wire [31:0] wdata = s00_axi_wdata;
-
-  reg  [7:0] loader_conf;     // bit 0 is reset
-  reg [7:0] loader_btn, loader_btn_2;
 
 `ifdef EMBED_GAME
   // Static compiled-in game data 
@@ -337,13 +344,6 @@ module NES_KV260(
       joypad_bits2 <= {1'b0, joypad_bits2[7:1]};
     last_joypad_clock <= joypad_clock;
   end
-
-  // ROM loader
-  wire [21:0] loader_addr;
-  wire [7:0] loader_write_data;
-  wire loader_write;
-  wire [31:0] mapper_flags;
-  wire loader_done, loader_fail;
   
   // Parses ROM data and store them for MemoryController to access
   GameLoader loader(clk, loader_reset, loader_input, loader_clk,

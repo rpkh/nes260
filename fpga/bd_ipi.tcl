@@ -1,6 +1,6 @@
 
 ################################################################
-# This is a generated script based on design: design_1
+# This is a generated script based on design: bd_ipi
 #
 # Though there are limitations about the generated script,
 # the main purpose of this utility is to make learning
@@ -35,7 +35,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 ################################################################
 
 # To test this script, run the following commands from Vivado Tcl console:
-# source design_1_script.tcl
+# source bd_ipi_script.tcl
 
 
 # The design that will be created by this Tcl script contains the following 
@@ -262,6 +262,7 @@ proc create_root_design { parentCell } {
    CONFIG.MMCM_CLKOUT1_DIVIDE {1} \
    CONFIG.MMCM_DIVCLK_DIVIDE {23} \
    CONFIG.NUM_OUT_CLKS {1} \
+   CONFIG.PRIM_SOURCE {No_buffer} \
    CONFIG.USE_RESET {false} \
  ] $clk_wiz_0
 
@@ -1125,6 +1126,7 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   connect_bd_net -net NES_KV260_0_sample [get_bd_pins NES_KV260_0/sample] [get_bd_pins pmod_audio_0/sample]
   connect_bd_net -net NES_KV260_0_scanline [get_bd_pins NES_KV260_0/scanline] [get_bd_pins nes_dp_0/ppu_scanline]
   connect_bd_net -net clk_wiz_0_clk_out1 [get_bd_pins clk_wiz_0/clk_out1] [get_bd_pins nes_dp_0/clk_pixel] [get_bd_pins proc_sys_reset_0/slowest_sync_clk] [get_bd_pins zynq_ultra_ps_e_0/dp_video_in_clk]
+  connect_bd_net -net clk_wiz_0_locked [get_bd_pins clk_wiz_0/locked] [get_bd_pins proc_sys_reset_0/dcm_locked]
   connect_bd_net -net nes_dp_0_active_video [get_bd_pins nes_dp_0/de] [get_bd_pins zynq_ultra_ps_e_0/dp_live_video_in_de]
   connect_bd_net -net nes_dp_0_hsync [get_bd_pins nes_dp_0/hsync] [get_bd_pins zynq_ultra_ps_e_0/dp_live_video_in_hsync]
   connect_bd_net -net nes_dp_0_video [get_bd_pins nes_dp_0/video] [get_bd_pins zynq_ultra_ps_e_0/dp_live_video_in_pixel1]
