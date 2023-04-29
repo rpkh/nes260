@@ -4,18 +4,27 @@ from tkinter import messagebox
 from tkinter import font
 from tkinter.filedialog import askopenfilename
 
-import sys, os, threading, queue, time, webbrowser
-import itertools
+import os, threading, time, webbrowser
 
 from ines import Ines
+
+import pygame
+# Table contains mappings for controller buttons to the NES buttons.
+# The bit mappings for the NES buttons are:
+# 0 = A, 1 = B, 2 = Select, 3 = Start, 4 = Up, 5 = Down, 6 = Left, 7 = Right.
+# The button mappings are defined as "controller-button":"nes-button".
+# Some controllers implement the D-pad as separate buttons others as a hat switch (x-axis, y-axis)
+button_mappings = {
+    # Controller name                       A,   B, Select, Start,   Up, Down, Left, Right
+    'Nintendo Switch Pro Controller'   : {0:0, 1:1,    4:2,   6:3, 11:4, 12:5, 13:6, 14:7},
+    'Controller (XBOX 360 For Windows)': {1:0, 0:1,    6:2,   7:3}, # D-pad as hat switch
+    'Default'                          : {1:0, 0:1,    6:2,   7:3}, # D-pad as hat switch
+}
 
 # pyserial
 import serial
 import serial.tools.list_ports
-# XInput-Python
-# import XInput as xi
-# inputs
-import inputs
+
 from importlib import reload
 
 ports = serial.tools.list_ports.comports()
@@ -40,19 +49,21 @@ def about():
     """
     NES260 - NES emulator for KV260 FPGA board
     
+    Original version by:
     (c) Feng Zhou, 2022.7
+    https://github.com/zf3/
+
+    Updated by:
+    RPKH, 2023
+    https://github.com/rpkh/
     """)
 
 def site():
-    webbrowser.open("https://github.com/zf3")
-
-# Hacky way to support plugging-in of controller when program is running
-def refreshController():
-    reload(inputs)
+    webbrowser.open("https://github.com/rpkh/nes260")
 
 def initUi():
     top.title("NES260")
-    top.geometry("400x250")
+    top.geometry("480x250")
 
     title=Label(top, text='NES260', fg="#555")
     title.configure(font=("Arial", 22, "bold"))
@@ -60,12 +71,9 @@ def initUi():
 
     menu = Menu(top)
     top.config(menu=menu)
-    fileMenu = Menu(menu)
-    fileMenu.add_command(label="Refresh controllers", command=refreshController)
     helpMenu = Menu(menu)
     helpMenu.add_command(label="Project site", command=site)
     helpMenu.add_command(label="About", command=about)
-    menu.add_cascade(label="File", menu=fileMenu)
     menu.add_cascade(label="Help", menu=helpMenu)
 
     btnLoad = Button(top, text = "Load .nes", command=chooseInes)
@@ -92,19 +100,30 @@ def initUi():
     optionSerial=OptionMenu(top, device, *devices, command=serialSelected)
     optionSerial.place(x=50, y=190)
 
+    # Controller group
+    labelfrmCtr=LabelFrame(top, text="Controllers")
+    labelfrmCtr.grid(column=2, row=1)
+    labelfrmCtr.place(x=160, y=170)
+
     # Controller 1
-    labelCtr1=Label(top, text="Controller 1")
-    labelCtr1.place(x=160, y=170)
+    labelCtr1=Label(labelfrmCtr, text="1:")
+    labelCtr1.grid(column=0, row=0)
     global labelCtr1Status
-    labelCtr1Status=Label(top, text="Disconnected", fg="#888")
-    labelCtr1Status.place(x=160, y=195)
+    labelCtr1Status=Label(labelfrmCtr, text="Disconnected", fg="#888")
+    labelCtr1Status.grid(column=1, row=0)
+    global labelCtr1Name
+    labelCtr1Name=Label(labelfrmCtr, text="", justify='left', anchor='w')
+    labelCtr1Name.grid(column=2, row=0,)
 
     # Controller 2
-    labelCtr2=Label(top, text="Controller 2")
-    labelCtr2.place(x=270, y=170)
+    labelCtr2=Label(labelfrmCtr, text="2:")
+    labelCtr2.grid(column=0, row=1)
     global labelCtr2Status
-    labelCtr2Status=Label(top, text="Disconnected", fg="#888")
-    labelCtr2Status.place(x=270, y=195)
+    labelCtr2Status=Label(labelfrmCtr, text="Disconnected", fg="#888")
+    labelCtr2Status.grid(column=1, row=1, sticky=W)
+    global labelCtr2Name
+    labelCtr2Name=Label(labelfrmCtr, text="")
+    labelCtr2Name.grid(column=2, row=1, sticky=W)
 
 def connectSerial():
     global ser
@@ -190,108 +209,147 @@ thread.start()
 
 initUi()
 
-
 # Names of first 2 gamepads we see so they do not get mixed up
 pad_name=['','']
+pad_id=['','']
+pad_mapping=['','']
 pad_connected=[False,False]
-pad_lock=threading.Lock()
 
 def showControllerInfo():
     if pad_connected[0]:
         labelCtr1Status.config(text='Connected', fg='#0c0')
+        labelCtr1Name.config(text=f'{pad_name[0]}:{pad_id[0]}')
     else:
         labelCtr1Status.config(text='Disconnected', fg='#888')
+        labelCtr1Name.config(text='')
     if pad_connected[1]:
         labelCtr2Status.config(text='Connected', fg='#0c0')
+        labelCtr2Name.config(text=f'{pad_name[1]}:{pad_id[1]}')
     else:
         labelCtr2Status.config(text='Disconnected', fg='#888')
+        labelCtr2Name.config(text='')
 
+pygame.init()
+
+# Implementation is based on example code for joystick module:
+# https://www.pygame.org/docs/ref/joystick.html
 def controllerThread():
-    global pad_name, pad_connected
-    # The bits are: 0 - A, 1 - B, 2 - Select, 3 - Start, 
-    #               4 - Up, 5 - Down, 6 - Left,7 - Right
-    item_q = queue.Queue()
-    def run_one(i,source):
-        while True:
-            if source != None:
-                try:       
-                    for item in source: 
-                        x = i,item
-                        item_q.put(x)
-                except Exception:
-                    pad_connected[i]=False
-                    source=None
-                    reload(inputs)
-                    showControllerInfo()
-            if not pad_connected[i]:
-                # controller disconnected, now look for another, or the original comes back
-                pad_lock.acquire()              # do not operate on pad data concurrently
-                pads=inputs.devices.gamepads
-                for pad in pads:
-                    name=pad.get_char_name()
-                    # print(name)
-                    if name!=pad_name[1-i]:     # make sure it's not the other thread's pad
-                        pad_name[i]=name
-                        source=pad
-                        pad_connected[i]=True
-                        print(pad_name)
-                        print(pad_connected)
-                        showControllerInfo()
-                        break
-                pad_lock.release()
-                time.sleep(0.1)
+    global pad_name, pad_id, pad_mapping, pad_connected
 
-    pads=inputs.devices.gamepads
-    # Enumerate all gamepads
-    for i in range(2):
-        if i < len(pads):
-            pad_name[i]=pads[i].get_char_name()
-            pad_connected[i]=True
-            t = threading.Thread(target=run_one,args=(i,pads[i]), daemon=True)
-        else:
-            t = threading.Thread(target=run_one,args=(i,None), daemon=True)
-        t.start()
-    showControllerInfo()
+    # Used to manage how fast the screen updates.
+    clock = pygame.time.Clock()
+
+    # This dict can be left as-is, since pygame will generate a
+    # pygame.JOYDEVICEADDED event for every joystick connected
+    # at the start of the program.
+    joysticks = {}
 
     btns = [0,0]
-    while True:
-        # events = xi.get_events()
-        u, events = item_q.get()
+    done = False
+    while not done:
         btns_old = btns.copy()
-        for e in events:
-            print(u, e.ev_type, e.code, e.state)
-            if (e.ev_type == 'Key' or e.ev_type == 'Absolute') and e.state!=0:      # button pressed
-                # print('key pressed')
-                if e.code == "BTN_SOUTH":
-                    btns[u] |= 1
-                elif e.code == "BTN_EAST":
-                    btns[u] |= 1 << 1
-                elif e.code == "BTN_START":               
-                    btns[u] |= 1 << 2
-                elif e.code == "BTN_SELECT":               
-                    btns[u] |= 1 << 3
-                elif e.code == "ABS_HAT0Y" and e.state==-1: # DPAD UP
-                    btns[u] |= 1 << 4
-                elif e.code == "ABS_HAT0Y" and e.state==1:
-                    btns[u] |= 1 << 5
-                elif e.code == "ABS_HAT0X" and e.state==-1:
-                    btns[u] |= 1 << 6
-                elif e.code == "ABS_HAT0X" and e.state==1:
-                    btns[u] |= 1 << 7
-            elif (e.ev_type == 'Key' or e.ev_type == 'Absolute') and e.state==0:
-                # print('key unpressed')
-                if e.code == "BTN_SOUTH":
-                    btns[u] &= ~1
-                elif e.code == "BTN_EAST":
-                    btns[u] &= ~(1 << 1)
-                elif e.code == "BTN_START":               
-                    btns[u] &= ~(1 << 2)
-                elif e.code == "BTN_SELECT":               
-                    btns[u] &= ~(1 << 3)
-                elif e.code == "ABS_HAT0Y":             # UP and DOWN unpressed
-                     btns[u] &= ~(3 << 4)
-                elif e.code == "ABS_HAT0X":             # LEFT and RIGTH unpressed
-                    btns[u] &= ~(3 << 6)
+
+        try:
+            pygame_events = pygame.event.get()
+        except:
+            # Terminate this loop so that the thread can finish
+            break
+
+        # Event processing step.
+        # Possible joystick events: JOYAXISMOTION, JOYBALLMOTION, JOYBUTTONDOWN,
+        # JOYBUTTONUP, JOYHATMOTION, JOYDEVICEADDED, JOYDEVICEREMOVED
+        for event in pygame_events:
+            if event.type == pygame.QUIT:
+                done = True  # Flag that we are done so we exit this loop.
+
+            # Handle hotplugging
+            if event.type == pygame.JOYDEVICEADDED:
+                # This event will be generated when the program starts for every
+                # joystick, filling up the list without needing to create them manually.
+                joy = pygame.joystick.Joystick(event.device_index)
+                joysticks[joy.get_instance_id()] = joy
+
+                # Look for an empty slot
+                for i in range(2):
+                    if pad_connected[i] == True:
+                        continue
+
+                    pad_id[i] = joy.get_instance_id()
+                    pad_name[i] = f"{joy.get_name()}"
+
+                    # Check if we have defined a button mapping for this controller
+                    if joy.get_name() in button_mappings:
+                        pad_mapping[i] = button_mappings[joy.get_name()]
+                    else:
+                        pad_mapping[i] = button_mappings['Default']
+
+                    pad_connected[i] = True;
+                    break
+
+                showControllerInfo()
+                print(f"Joystick {joy.get_instance_id()} connected [{joy.get_name()}:{joy.get_guid()}]")
+
+            if event.type == pygame.JOYDEVICEREMOVED:
+                # Unregister controller
+                del joysticks[event.instance_id]
+
+                # Look for slot
+                for i in range(2):
+                    if pad_id[i] == event.instance_id:
+                        pad_name[i] = ""
+                        pad_id[i] = ""
+                        pad_mapping[i] = ""
+                        pad_connected[i] = False
+                        break
+                showControllerInfo()
+                print(f"Joystick {event.instance_id} disconnected")
+
+            if event.type == pygame.JOYBUTTONDOWN:
+                print(f'Joystick {event.instance_id} button pressed: {event.button}')
+                # We only need to handle the button event if it's for a controller that is connected.
+                for i in range(2):
+                    if pad_id[i] == event.instance_id:
+                        if event.button in pad_mapping[i]:
+                            btns[i] |= 1 << pad_mapping[i][event.button]
+                        break
+
+            if event.type == pygame.JOYBUTTONUP:
+                print(f'Joystick {event.instance_id} button released: {event.button}')
+                # We only need to handle the button event if it's for a controller that is connected.
+                for i in range(2):
+                    if pad_id[i] == event.instance_id:
+                        if event.button in pad_mapping[i]:
+                            btns[i] &= ~(1 << pad_mapping[i][event.button])
+                        break
+
+            if event.type == pygame.JOYHATMOTION:
+                print(f'Joystick {event.instance_id} hat motion: {event.value}')
+                # We only need to handle the hatmotion event if it's for a controller that is connected.
+                for i in range(2):
+                    if pad_id[i] == event.instance_id:
+                        # (x,y) 
+                        # x -> -1 = Left, 1 = Right
+                        # y -> -1 = Down, 1 = Up
+
+                        # Clear buttons
+                        btns[i] &= ~(1 << 4)
+                        btns[i] &= ~(1 << 5)
+                        btns[i] &= ~(1 << 6)
+                        btns[i] &= ~(1 << 7)
+
+                        # Check the X-axis
+                        if event.value[0] == 1:
+                            btns[i] |= 1 << 7
+                        if event.value[0] == -1:
+                            btns[i] |= 1 << 6
+
+                        # Check the Y-axis
+                        if event.value[1] == 1:
+                            btns[i] |= 1 << 4
+                        if event.value[1] == -1:
+                            btns[i] |= 1 << 5
+                        break
+
         if btns[0] != btns_old[0] or btns[1] != btns_old[1]:
             print("Buttons: {0:02x}, {1:02x}".format(btns[0], btns[1]))
             b=bytearray(b'\x02')
@@ -302,10 +360,13 @@ def controllerThread():
             ser.write(b)
             ser.flush()
 
+        # Limit to 30 frames per second.
+        clock.tick(30)
+
 thread2 = threading.Thread(target=controllerThread, daemon=True)
 thread2.start()
 
 # Show main GUI interface
-
 top.mainloop()
 
+pygame.quit()
