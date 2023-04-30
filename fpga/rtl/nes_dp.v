@@ -103,9 +103,8 @@ module nes_dp(
     wire [15:0] fb_raddr = {fy, fx};      // framebuffer read address
 
     // Put PPU data in framebuffer, all in ppu_clk domain
-    wire ppu_active = ppu_scanline <= 239 && ppu_cycle != 0 && ppu_cycle <= 256;
-    wire [8:0] ppu_cycle_minus_one = ppu_cycle - 1;
-    wire [15:0] fb_waddr = {ppu_scanline[7:0], ppu_cycle_minus_one[7:0]};         // framebuffer write address
+    wire ppu_active = ppu_scanline <= 239 && ppu_cycle < 256;
+    wire [15:0] fb_waddr = {ppu_scanline[7:0], ppu_cycle[7:0]};         // framebuffer write address
     
     /* Double buffer
     wire [5:0] pixel0, pixel1;
@@ -127,17 +126,24 @@ module nes_dp(
     (* ram_style = "registers" *) reg [5:0] pixel;
     nes_fb fb0(clk_pixel, video_active, fb_raddr, p_pixel,
                clk_nes, ppu_signal & ppu_active & ppu_refresh, fb_waddr, ppu_video);
+    
+    reg [1:0] video_active_del;
     always @(posedge clk_pixel) begin
         // delay all output by one cycle 
         pixel <= p_pixel;
         de <= p_de;
         hsync <= p_hsync;
         vsync <= p_vsync;
+        
+        // Delay chain for the 'video_active' signal
+        video_active_del <= {video_active_del[0], video_active};
     end
 
     // End no double buffer
 
-    wire [23:0] pixel_rgb = video_active ? nes_palette(pixel) : 8'h0f;          // 0x0f is black
+    // Use the delayed 'video_active' signal to compensate for the clock cycle latency
+    // of the framebuffer (BRAM) and the extra clock cycle latency of the 'pixel' signal.
+    wire [23:0] pixel_rgb = video_active_del[1] ? nes_palette(pixel) : 8'h0f;          // 0x0f is black
     assign video = {pixel_rgb[23:16], 4'b0, pixel_rgb[15:8], 4'b0, pixel_rgb[7:0], 4'b0};        // fetch video data, will be ready for next cycle
 
     // 2C02 palette: https://www.nesdev.org/wiki/PPU_palettes
